@@ -150,6 +150,7 @@ M.get_reference = function()
     print(errors.FILE_NOT_FOUND)
   end
 end
+
 --TODO
 M.remove_reference = function()
   local file_content = _read_file("output.txt")
