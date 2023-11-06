@@ -16,38 +16,42 @@ local errors = {
   FAILED_TO_CREATE = "Failed to create file!"
 }
 
+local function isempty(s)
+  return s == nil or s == ''
+end
+
 local _read_file = function(name, modifier)
   modifier = modifier or "r"
 
   local file = io.open(name, modifier)
-  local file_content = nil
+  local result = {}
 
   if file then
-    file_content = file:read("*a")
-    file_content = vim.fn.json_decode(file_content)
+    local file_content = file:read("*a")
+
+    result = isempty(file_content) and {} or vim.fn.json_decode(file_content)
+
     file:close()
   end
 
-  return file_content
+  return result
 end
 
 
 local function _parse_text(key, text)
   local file_content = _read_file("output.txt")
-  local data = {}
 
   if file_content and file_content ~= '' then
     if file_content[key] == nil then
       file_content[key] = text
-      data = file_content
     else
       print(errors.KEY_EXIST)
     end
   else
-    data[key] = text
+    file_content[key] = text
   end
 
-  return data;
+  return file_content;
 end
 
 local function _write_to_file(key, text)
@@ -104,7 +108,7 @@ local _init_telescope_picker = function(data)
       end
     },
     sorter = conf.generic_sorter({}),
-    attach_mappings = function(prompt_bufnr, map)
+    attach_mappings = function(prompt_bufnr)
       actions.select_default:replace(function()
         actions.close(prompt_bufnr)
 
