@@ -87,7 +87,15 @@ end
 local _init_telescope_picker = function(data)
   local parsedData = _parse_data(data)
 
-  return telescope_pickers.new({}, {
+  return telescope_pickers.new({
+    layout_config = {
+      height = 0.6,
+      width = 0.75,
+      prompt_position = "bottom",
+    },
+    results_title = false,
+    sorting_strategy = "descending",
+  }, {
     prompt_title = "Get reference",
     finder = finders.new_table {
       results = parsedData,
@@ -96,7 +104,7 @@ local _init_telescope_picker = function(data)
 
         return {
           value = firstValue,
-          ordinal = "abc",
+          ordinal = firstKey,
           display = firstKey
         }
       end
