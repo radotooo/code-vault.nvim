@@ -7,14 +7,27 @@ local telescope_pickers = require "telescope.pickers"
 local actions = require "telescope.actions"
 local action_state = require "telescope.actions.state"
 
-
-local errors = {
+local ERRORS = {
   FILE_NOT_FOUND = "File does not exist!",
   KEY_EXIST = "Key exist!",
   NO_DATA = "No data to write.",
   KEY_NOT_FOUND = "Key does not exist!",
-  FAILED_TO_CREATE = "Failed to create file!"
+  FAILED_TO_CREATE = "Failed to create file!",
 }
+
+local MESSAGES = {
+  ENTER_KEY = "Enter key: ",
+  SELECT_ENTRY = "Select entry to remove: ",
+  ENTRY_ADDED = "Entry successfully added!",
+  ENTRY_REMOVED = "Entry successfully removed!"
+}
+
+local OUTPUT_FILE = 'output.txt'
+
+local function print_message(message)
+  vim.api.nvim_command('redraw')
+  print(message)
+end
 
 local function isempty(s)
   return s == nil or s == ''
@@ -39,13 +52,13 @@ end
 
 
 local function _parse_text(key, text)
-  local file_content = _read_file("output.txt")
+  local file_content = _read_file(OUTPUT_FILE)
 
   if file_content and file_content ~= '' then
     if file_content[key] == nil then
       file_content[key] = text
     else
-      print(errors.KEY_EXIST)
+      print(ERRORS.KEY_EXIST)
     end
   else
     file_content[key] = text
@@ -57,19 +70,20 @@ end
 local function _write_to_file(key, text)
   local data = _parse_text(key, text)
 
-  local file = io.open("output.txt", "w")
+  local file = io.open(OUTPUT_FILE, "w")
 
   if file then
     if next(data) ~= nil then
       local json = vim.fn.json_encode(data)
       file:write(json)
+      print_message(MESSAGES.ENTRY_ADDED)
     else
-      print(errors.NO_DATA)
+      print_message(ERRORS.NO_DATA)
     end
 
     file:close();
   else
-    print(errors.FAILED_TO_CREATE)
+    print_message(ERRORS.FAILED_TO_CREATE)
   end
 end
 
@@ -87,16 +101,8 @@ end
 local _init_telescope_picker = function(data)
   local parsedData = _parse_data(data)
 
-  return telescope_pickers.new({
-    layout_config = {
-      height = 0.6,
-      width = 0.75,
-      prompt_position = "bottom",
-    },
-    results_title = false,
-    sorting_strategy = "descending",
-  }, {
-    prompt_title = "Get reference",
+  return telescope_pickers.new({}, {
+    prompt_title = "Get entry",
     finder = finders.new_table {
       results = parsedData,
       entry_maker = function(item)
@@ -104,7 +110,7 @@ local _init_telescope_picker = function(data)
 
         return {
           value = firstValue,
-          ordinal = firstKey,
+          ordinal = "abc",
           display = firstKey
         }
       end
@@ -131,7 +137,7 @@ local _init_telescope_picker = function(data)
   })
 end
 
-M.save_reference = function()
+M.save_entry = function()
   local vstart = vim.fn.getpos("'<")
   local vend = vim.fn.getpos("'>")
 
@@ -140,15 +146,15 @@ M.save_reference = function()
 
   local lines = vim.fn.getline(line_start, line_end)
 
-  vim.ui.input({ prompt = 'Enter reference key: ' }, function(input)
+  vim.ui.input({ prompt = MESSAGES.ENTER_KEY }, function(input)
     if input then
       _write_to_file(input, lines)
     end
   end)
 end
 
-M.get_reference = function()
-  local file = io.open("output.txt", "r")
+M.get_entry = function()
+  local file = io.open(OUTPUT_FILE, "r")
 
   if file then
     local file_content = file:read("*a")
@@ -159,28 +165,34 @@ M.get_reference = function()
     picker:find()
     file:close()
   else
-    print(errors.FILE_NOT_FOUND)
+    print(ERRORS.FILE_NOT_FOUND)
   end
 end
 
---TODO
-M.remove_reference = function()
-  local file_content = _read_file("output.txt")
+M.remove_entry = function()
+  local file_content = _read_file(OUTPUT_FILE)
 
   if file_content then
-    vim.ui.input({ prompt = 'Enter reference key: ' }, function(input)
-      if file_content[input] then
-        file_content[input] = nil
+    local keys = {}
 
-        local file = io.open("output.txt", "w")
+    for key, _ in pairs(file_content) do
+      table.insert(keys, key)
+    end
+
+    vim.ui.select(keys, { prompt = MESSAGES.SELECT_ENTRY }, function(item)
+      if file_content[item] then
+        file_content[item] = nil
+
+        local file = io.open(OUTPUT_FILE, "w")
 
         if file then
           local json = vim.fn.json_encode(file_content)
           file:write(json)
           file:close();
+          print_message(MESSAGES.ENTRY_REMOVED)
         end
       else
-        print(errors.KEY_NOT_FOUND)
+        print_message(ERRORS.KEY_NOT_FOUND)
       end
     end)
   end
