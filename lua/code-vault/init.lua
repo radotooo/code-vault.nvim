@@ -110,7 +110,7 @@ local _init_telescope_picker = function(data)
 
         return {
           value = firstValue,
-          ordinal = "abc",
+          ordinal = firstKey,
           display = firstKey
         }
       end
@@ -133,7 +133,6 @@ local _init_telescope_picker = function(data)
       end)
       return true
     end,
-
   })
 end
 
