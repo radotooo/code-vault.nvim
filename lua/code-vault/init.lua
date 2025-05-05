@@ -22,7 +22,7 @@ local MESSAGES = {
   ENTRY_REMOVED = "Entry successfully removed!"
 }
 
-local OUTPUT_FILE = 'output.txt'
+local OUTPUT_FILE = vim.fn.stdpath("data") .. 'vault.json'
 
 local function print_message(message)
   vim.api.nvim_command('redraw')
